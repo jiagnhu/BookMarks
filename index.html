@@ -1,0 +1,234 @@
+<!--
+  Project: My BookMarks (M2 Frontend)
+  Files in this project:
+    1) index.html  (this file)
+    2) styles.css
+    3) app.js
+    4) sw.js       (service worker registered in app.js)
+
+  Notes:
+  - Pure HTML/CSS/JS (no frameworks) as required.
+  - Nginx serves the static assets.
+  - Data persistence is in localStorage/sessionStorage for M2 demo; later wire to MySQL APIs.
+  - Offline: a basic Service Worker is included (sw.js). 部署时请确保在站点根目录提供 /sw.js。
+  - A/B pages via ?page=A|B. B supports independent password.
+  - Layout prioritizes wallpaper showcase: left/right link columns + adjustable transparent center window (default 28vw).
+  - Settings: right-side slide-over panel（右上角“设置”按钮）。包含：一键“适配浅色壁纸”、皮肤上传、修改密码、恢复初始、退出登录。
+  - 登录按钮已移至顶部最右侧，紧邻“设置”按钮；登录成功后显示圆形头像并隐藏登录按钮。
+  - 设置面板宽度优化，移除帐户状态显示，不出现横向滚动条。
+  - Includes a tiny self-test runner (no network). See the green tag near the header.
+-->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My BookMarks</title>
+  <meta name="theme-color" content="#111" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>window.API_BASE = 'http://localhost:4000/api/v1';</script>
+  <script src="api.js"></script>
+  </head>
+<body>
+  <div class="vignette" id="vignette"></div>
+  <div class="app" id="app">
+    <header>
+      <div class="brand editable" data-field="title">
+        <span class="text" id="brandText">My BookMarks</span>
+        <button class="edit-btn" id="editBrand" type="button" aria-label="编辑书签名称">编辑</button>
+        <div class="edit-panel" id="brandEditPanel" hidden>
+          <input type="text" id="brandInput" placeholder="给你的页面起个名字" />
+          <div class="edit-actions">
+            <button class="btn ghost" id="brandCancel" type="button">取消</button>
+            <button class="btn primary" id="brandSave" type="button">保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="subtitle editable" data-field="motto">
+        <span class="text" id="subtitleText">简洁 · 可编辑 · 可离线加载</span>
+        <button class="edit-btn" id="editSubtitle" type="button" aria-label="编辑心情或座右铭">编辑</button>
+        <div class="edit-panel" id="subtitleEditPanel" hidden>
+          <input type="text" id="subtitleInput" placeholder="写点今日心情或座右铭…" />
+          <div class="edit-actions">
+            <button class="btn ghost" id="subtitleCancel" type="button">取消</button>
+            <button class="btn primary" id="subtitleSave" type="button">保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="btnLoginTop">登录</button>
+        <div class="avatar" id="avatar">U</div>
+        <button class="btn" id="btnSettings">设置</button>
+      </div>
+      <div class="selftest"><span  id="selfTestTag"></span></div>
+    </header>
+
+    <main class="board">
+      <section class="grid" id="linksGrid">
+        <div class="panel col" id="colLeft"></div>
+        <div class="showcase" id="showcase"></div>
+        <div class="panel col" id="colRight"></div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="ab">
+          <a id="linkA" href="?page=A">A</a>
+          <span class="sep">·</span>
+          <a id="linkB" href="?page=B">B</a>
+          <button id="btnSetBPass" class="btn icon-btn hidden" style="margin-left:12px" title="设置独立密码" aria-label="设置独立密码">
+            <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Zm3 4.25a1.75 1.75 0 1 0 0 3.5a1.75 1.75 0 0 0 0-3.5Z"/></svg>
+          </button>
+        </div>
+        <div class="tools">
+          <span class="tag" id="pageTag">A页</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Settings Drawer -->
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer">
+    <div class="hd">
+      <strong>设置</strong>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn danger" id="btnCloseDrawer">关闭</button>
+      </div>
+    </div>
+    <div class="bd">
+      <h4 style="margin:4px 0">外观</h4>
+      <div class="row"><label>内容透明度</label><input type="range" min="0" max="100" value="55" id="rngBoard" /><span class="tag" id="valBoard">55%</span></div>
+      <div class="row"><label>卡片透明度</label><input type="range" min="0" max="100" value="55" id="rngCard" /><span class="tag" id="valCard">55%</span></div>
+      <div class="row"><label>遮罩强度</label><input type="range" min="0" max="100" value="25" id="rngVignette" /><span class="tag" id="valVignette">25%</span></div>
+      <div class="row"><label>背景窗口宽度</label><input type="range" min="0" max="50" value="28" id="rngShowcase" /><span class="tag" id="valShowcase">28vw</span></div>
+      <div class="row"><label>浅色壁纸</label><button class="btn" id="btnAdaptLight">一键适配浅色壁纸</button></div>
+      <div class="row"><label>恢复外观</label><button class="btn danger" id="btnResetAppearance">恢复</button></div>
+      
+      <h4 style="margin:8px 0">皮肤</h4>
+      <div class="row"><label>自定义皮肤</label>
+        <div style="display:flex; gap:8px; align-items:center; flex:1">
+          <input style="flex:1; width: 200px;" type="file" id="skinUpload" accept="image/*" />
+          <button style="flex:1" class="btn" id="btnApplySkin">应用</button>
+        </div>
+      </div>
+      <div class="row"><label></label>
+        <div><span class="hint" id="skinQuotaHint">提示：自定义皮肤剩余 3 次上传机会</span></div>
+      </div>
+      <div class="row" id="presetSkins" style="gap:8px">
+        <label>预设的皮肤</label>
+        <div class="preset-skins">
+          <div class="preset-thumb" data-skin="images/p1.jpeg" title="p1" style="background-image:url('images/p1.jpeg')"></div>
+          <div class="preset-thumb" data-skin="images/p2.jpeg" title="p2" style="background-image:url('images/p2.jpeg')"></div>
+          <div class="preset-thumb" data-skin="images/p3.jpeg" title="p3" style="background-image:url('images/p3.jpeg')"></div>
+        </div>
+      </div>
+
+      <div class="row" id="customSkins" style="gap:8px">
+        <label>我的皮肤</label>
+        <div class="preset-skins" id="customSkinsList"></div>
+      </div>
+
+      
+
+      <h4 style="margin:8px 0">账户</h4>
+      <div class="row"><label>修改密码</label><button class="btn" id="btnChangePwd">打开</button></div>
+      <div class="row" id="btnLogout"><label>退出</label><button class="btn" >退出登录</button></div>
+    </div>
+  </aside>
+
+  <!-- Dialogs -->
+  <dialog id="dlgLink">
+    <div class="dlg-head">编辑链接</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>名称</label><input type="text" id="linkName" /></div>
+      <div class="dlg-row"><label>URL</label><input type="url" id="linkUrl" placeholder="https://" /></div>
+      <div class="hint">保存后展示为：名称（点击跳转） · 小字显示URL</div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnLinkCancel">取消</button>
+      <button class="save" id="btnLinkSave">保存</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgLogin">
+    <div class="dlg-head">登录</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>用户名</label><input type="text" id="loginUser" placeholder="demo" /></div>
+      <div class="dlg-row"><label>密码</label><input type="password" id="loginPwd" placeholder="Taich@2022" /></div>
+      <div class="hint">初始密码为 <code>Taich@2022</code></div>
+      <div class="hint error" id="loginErr" hidden></div>
+      <div class="hint"><button class="btn link" id="btnOpenRegister" type="button">注册帐户</button></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnLoginCancel">取消</button>
+      <button class="save" id="btnLoginOk">登录</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgRegister">
+    <div class="dlg-head">注册</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>用户名</label><input type="text" id="regUser" placeholder="demo" /></div>
+      <div class="dlg-row"><label>密码</label><input type="password" id="regPwd" placeholder="至少 6 位" /></div>
+      <div class="hint">注册成功后自动登录。</div>
+      <div class="hint error" id="regErr" hidden></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnRegCancel">取消</button>
+      <button class="save" id="btnRegOk">注册</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgChangePwd">
+    <div class="dlg-head">修改登录密码</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>旧密码</label><input type="password" id="oldPwd" /></div>
+      <div class="dlg-row"><label>新密码</label><input type="password" id="newPwd" /></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnPwdCancel">取消</button>
+      <button class="save" id="btnPwdOk">保存</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgBPass">
+    <div class="dlg-head">B页独立密码</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>密码</label><input type="password" id="bPass" placeholder="留空为不设密码" /></div>
+      <div class="hint">设置或清空后保存，进入B页时将要求验证（留空则无需验证）。</div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnBPassCancel">取消</button>
+      <button class="save" id="btnBPassSave">保存</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgAskB">
+    <div class="dlg-head">请输入B页密码</div>
+    <div class="dlg-body">
+      <div class="dlg-row"><label>密码</label><input type="password" id="askBPwd" /></div>
+      <div class="hint">若未设置密码，可直接确认。</div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnAskBCancel">取消</button>
+      <button class="save" id="btnAskBOk">确认</button>
+    </div>
+  </dialog>
+
+  <div class="sw-update" id="swUpdate" hidden>
+    <div class="sw-update__body">
+      <span class="msg">检测到新版本内容</span>
+      <div class="actions">
+        <button class="btn primary" id="swUpdateApply" type="button">立即更新</button>
+        <button class="btn ghost" id="swUpdateDismiss" type="button">稍后</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+
+</body>
+</html>

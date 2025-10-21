@@ -1,0 +1,89 @@
+// A/B page switching and B-password auth
+import { els, qs } from './dom.js';
+import { KEYS, state } from './state.js';
+import { initPageTitle } from './headers.js';
+import { loadLinks } from './links.js';
+
+export function initAB() {
+  const linkA = qs('#linkA'); const linkB = qs('#linkB');
+  if (linkA) linkA.addEventListener('click', e => { e.preventDefault(); switchToPage('A'); });
+  if (linkB) linkB.addEventListener('click', e => { e.preventDefault(); switchToPage('B'); });
+  window.addEventListener('resize', () => positionLockIcon());
+  if (els.btnSetBPass) els.btnSetBPass.addEventListener('click', () => { els.bpassDlg && els.bpassDlg.showModal(); });
+  switchToPage(state.page, false);
+}
+
+export function switchToPage(p, pushState = true) {
+  if (p !== 'A' && p !== 'B') p = 'A';
+  if (p === state.page && pushState === true) return;
+  state.page = p;
+  if (pushState) history.pushState({ page: p }, '', `?page=${p}`);
+  document.querySelectorAll('dialog')
+    .forEach(d => { try { if (d && d.open) d.close(); } catch (_) {} });
+  els.pageTag.textContent = state.page + '页';
+  initPageTitle();
+  loadLinks(state.page);
+  const linkA = qs('#linkA'); const linkB = qs('#linkB');
+  if (linkA && linkB) { linkA.classList.toggle('active', state.page === 'A'); linkB.classList.toggle('active', state.page === 'B'); }
+  if (state.page === 'B') {
+    els.btnSetBPass.classList.remove('hidden');
+    positionLockIcon();
+    updateBPassButtonText();
+    const stored = (localStorage.getItem(KEYS.bPwd) || '').trim();
+    const authed = sessionStorage.getItem(KEYS.bAuthed) === '1';
+    if (stored && !authed) { requireBAuth(); }
+  } else {
+    sessionStorage.removeItem(KEYS.bAuthed);
+    els.btnSetBPass.classList.add('hidden');
+  }
+}
+
+export function positionLockIcon() {
+  const b = qs('#linkB');
+  const btn = els.btnSetBPass;
+  const wrap = b && b.parentElement;
+  if (!(b && btn && wrap)) return;
+  const bRect = b.getBoundingClientRect();
+  const wRect = wrap.getBoundingClientRect();
+  const left = (bRect.right - wRect.left) + 12;
+  const top = (bRect.top - wRect.top) + bRect.height / 2;
+  btn.style.left = left + 'px';
+  btn.style.top = top + 'px';
+  btn.style.transform = 'translateY(-50%)';
+}
+
+export function updateBPassButtonText() {
+  if (!els.btnSetBPass) return;
+  const has = !!(localStorage.getItem(KEYS.bPwd) || '').trim();
+  els.btnSetBPass.classList.toggle('lock-set', has);
+}
+
+export function requireBAuth() {
+  const backend = !!window.BMApi;
+  if (!backend) {
+    const stored = (localStorage.getItem(KEYS.bPwd) || '').trim();
+    if (!stored) { localStorage.removeItem(KEYS.bPwd); sessionStorage.setItem(KEYS.bAuthed, '1'); return; }
+    if (sessionStorage.getItem(KEYS.bAuthed) === '1') { return; }
+    els.askBDlg.showModal();
+    qs('#btnAskBCancel').onclick = () => { els.askBDlg.close(); location.href='?page=A'; };
+    qs('#btnAskBOk').onclick = () => {
+      const v = (qs('#askBPwd').value || '').trim();
+      if (!stored) { els.askBDlg.close(); return; }
+      if (v === stored) { sessionStorage.setItem(KEYS.bAuthed, '1'); els.askBDlg.close(); }
+      else alert('密码不正确');
+    };
+    return;
+  }
+  if (sessionStorage.getItem(KEYS.bAuthed) === '1') { return; }
+  els.askBDlg.showModal();
+  qs('#btnAskBCancel').onclick = () => { els.askBDlg.close(); location.href='?page=A'; };
+  qs('#btnAskBOk').onclick = async () => {
+    const v = (qs('#askBPwd').value || '').trim();
+    try {
+      const r = await window.BMApi.pages.verifyB(v);
+      if (r && (r.ok === true || r.ok === 'true')) { sessionStorage.setItem(KEYS.bAuthed, '1'); els.askBDlg.close(); }
+      else alert('密码不正确');
+    } catch (_) { alert('验证失败'); }
+  };
+}
+
