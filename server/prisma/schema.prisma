@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(64)
+  passwordHash String    @db.VarChar(255)
+  avatar       String?   @db.VarChar(1)
+  userType     UserType  @default(normal)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  linksJsonA   Json?
+  linksJsonB   Json?
+
+  pages        Page[]
+  skins        Skin[]
+  settings     UserSettings?
+  quota        Quota?
+}
+
+enum UserType {
+  normal
+  typeD
+  typeC
+  typeB
+  typeA
+}
+
+enum PageCode {
+  A
+  B
+}
+
+model Page {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  code           PageCode
+  title          String?   @db.VarChar(128)
+  motto          String?   @db.VarChar(255)
+  bPasswordHash  String?   @db.VarChar(255)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id])
+  bookmarks      Bookmark[]
+
+  @@unique([userId, code])
+}
+
+model Bookmark {
+  id          Int      @id @default(autoincrement())
+  pageId      Int
+  orderIndex  Int
+  name        String   @db.VarChar(128)
+  url         String   @db.VarChar(512)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  page        Page     @relation(fields: [pageId], references: [id])
+
+  @@index([pageId, orderIndex])
+}
+
+enum SkinType {
+  preset
+  custom
+}
+
+model Skin {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  type       SkinType
+  label      String?  @db.VarChar(64)
+  url        String   @db.LongText
+  isCurrent  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, isCurrent])
+}
+
+model UserSettings {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  boardAlpha    Int      @default(55)
+  cardAlpha     Int      @default(55)
+  vignette      Int      @default(25)
+  showcaseWidth Int      @default(28)
+  contrast      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model Quota {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  skinUploadUsed  Int      @default(0)
+  skinUploadQuota Int      @default(3)
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+// Public (guest) baseline data used when not logged in
+model PublicSettings {
+  id            Int      @id @default(autoincrement())
+  boardAlpha    Int      @default(55)
+  cardAlpha     Int      @default(55)
+  vignette      Int      @default(25)
+  showcaseWidth Int      @default(28)
+  contrast      Boolean  @default(false)
+  skinUrl       String   @db.VarChar(512)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PublicPage {
+  id            Int       @id @default(autoincrement())
+  code          PageCode
+  title         String?   @db.VarChar(128)
+  motto         String?   @db.VarChar(255)
+  bPasswordHash String?   @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookmarks     PublicBookmark[]
+
+  @@unique([code])
+}
+
+model PublicBookmark {
+  id          Int      @id @default(autoincrement())
+  pageId      Int
+  orderIndex  Int
+  name        String   @db.VarChar(128)
+  url         String   @db.VarChar(512)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  page        PublicPage @relation(fields: [pageId], references: [id])
+
+  @@index([pageId, orderIndex])
+}

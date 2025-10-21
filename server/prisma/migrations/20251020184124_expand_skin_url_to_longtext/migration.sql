@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Skin` MODIFY `url` LONGTEXT NOT NULL;
