@@ -120,11 +120,7 @@
       </div>
       <div class="row" id="presetSkins" style="gap:8px">
         <label>预设的皮肤</label>
-        <div class="preset-skins">
-          <div class="preset-thumb" data-skin="images/p1.jpeg" title="p1" style="background-image:url('images/p1.jpeg')"></div>
-          <div class="preset-thumb" data-skin="images/p2.jpeg" title="p2" style="background-image:url('images/p2.jpeg')"></div>
-          <div class="preset-thumb" data-skin="images/p3.jpeg" title="p3" style="background-image:url('images/p3.jpeg')"></div>
-        </div>
+        <div class="preset-skins"></div>
       </div>
 
       <div class="row" id="customSkins" style="gap:8px">
@@ -133,10 +129,12 @@
       </div>
 
       
-
-      <h4 style="margin:8px 0">账户</h4>
-      <div class="row"><label>修改密码</label><button class="btn" id="btnChangePwd">打开</button></div>
-      <div class="row" id="btnLogout"><label>退出</label><button class="btn" >退出登录</button></div>
+      
+      <section id="accountSection">
+        <h4 style="margin:8px 0">账户</h4>
+        <div class="row" style="margin-bottom: 10px;"><label>修改密码</label><button class="btn" id="btnChangePwd">打开</button></div>
+        <div class="row" id="btnLogout"><label>退出</label><button class="btn" >退出登录</button></div>
+      </section>
     </div>
   </aside>
 
@@ -159,13 +157,28 @@
     <div class="dlg-body">
       <div class="dlg-row"><label>用户名</label><input type="text" id="loginUser" placeholder="demo" /></div>
       <div class="dlg-row"><label>密码</label><input type="password" id="loginPwd" placeholder="Taich@2022" /></div>
-      <div class="hint">初始密码为 <code>Taich@2022</code></div>
       <div class="hint error" id="loginErr" hidden></div>
       <div class="hint"><button class="btn link" id="btnOpenRegister" type="button">注册帐户</button></div>
     </div>
     <div class="dlg-foot">
       <button class="btn" id="btnLoginCancel">取消</button>
       <button class="save" id="btnLoginOk">登录</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgSyncLinks">
+    <div class="dlg-head">同步本地链接</div>
+    <div class="dlg-body">
+      检测到你在未登录时添加/修改过链接。是否将这些链接同步到你的账号？
+      <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="chkSyncNever" />
+        <label for="chkSyncNever" style="user-select:none; cursor:pointer; color:var(--muted);">不再提示</label>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" id="btnSyncAppend">仅追加非空</button>
+      <button class="save" id="btnSyncOverwrite">覆盖全部</button>
+      <button class="btn" id="btnSyncCancel">取消</button>
     </div>
   </dialog>
 
@@ -228,7 +241,7 @@
       </div>
     </div>
   </div>
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 
 </body>
 </html>

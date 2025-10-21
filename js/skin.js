@@ -64,19 +64,19 @@ export function initSkin() {
               thumb.style.backgroundImage = `url('${p.url}')`;
               thumb.setAttribute('data-skin', p.url);
               thumb.addEventListener('click', async () => {
+                // 登录：使用 PUT 标记当前预设；未登录：仅本地应用
                 try {
                   const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
                   if (isUser && window.BMApi) {
-                    await window.BMApi.skins.currentSet(p.url);
-                    const cur = await window.BMApi.skins.currentGet();
-                    applySkin(cur);
-                  } else {
-                    state.dirty.skin = true;
-                    document.documentElement.style.setProperty('--bg-img', `url(${p.url})`);
-                    document.body.style.backgroundImage = `url(${p.url})`;
-                    localStorage.setItem(KEYS.skin(), p.url);
+                    await window.BMApi.skins.markCurrentPreset(p.url);
                   }
-                } catch (_) {}
+                } catch(_) { /* 忽略接口错误 */ }
+                try {
+                  state.dirty.skin = true;
+                  document.documentElement.style.setProperty('--bg-img', `url(${p.url})`);
+                  document.body.style.backgroundImage = `url(${p.url})`;
+                  localStorage.setItem(KEYS.skin(), p.url);
+                } catch(_) {}
               });
               list.appendChild(thumb);
             });
@@ -98,19 +98,19 @@ export function initSkin() {
               thumb.style.backgroundImage = `url('${item.url}')`;
               thumb.setAttribute('data-skin', item.url);
               thumb.addEventListener('click', async () => {
+                // 登录：PUT 标记当前自定义（按 id）；未登录：仅本地
                 try {
                   const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
-                  if (isUser) {
-                    await window.BMApi.skins.currentSet(item.url);
-                    const cur = await window.BMApi.skins.currentGet();
-                    applySkin(cur);
-                  } else {
-                    state.dirty.skin = true;
-                    document.documentElement.style.setProperty('--bg-img', `url(${item.url})`);
-                    document.body.style.backgroundImage = `url(${item.url})`;
-                    localStorage.setItem(KEYS.skin(), item.url);
+                  if (isUser && window.BMApi && item.id != null) {
+                    await window.BMApi.skins.markCurrentCustom(item.id);
                   }
-                } catch (_) {}
+                } catch(_) { /* 忽略接口错误 */ }
+                try {
+                  state.dirty.skin = true;
+                  document.documentElement.style.setProperty('--bg-img', `url(${item.url})`);
+                  document.body.style.backgroundImage = `url(${item.url})`;
+                  localStorage.setItem(KEYS.skin(), item.url);
+                } catch(_) {}
               });
               els.customSkinsList.appendChild(thumb);
             });
@@ -139,25 +139,39 @@ export function initSkin() {
     }
   } catch (_) {}
 
+  // 应用按钮应提交当前选择的文件/URL，不再弹出输入框
   if (els.btnApplySkin) els.btnApplySkin.addEventListener('click', async () => {
-    const url = prompt('输入图片 URL 作为背景：');
-    if (!url) return;
-    const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
-    const safe = JSON.stringify(url).slice(1, -1);
     try {
-      if (isUser && window.BMApi) {
-        await window.BMApi.skins.currentSet(safe);
-        const cur = await window.BMApi.skins.currentGet();
-        applySkin(cur);
-      } else {
-        state.dirty.skin = true;
-        document.documentElement.style.setProperty('--bg-img', `url(${safe})`);
-        document.body.style.backgroundImage = `url(${safe})`;
-        localStorage.setItem(KEYS.skin(), url);
+      const fileInput = els.skinUpload;
+      const picked = fileInput && fileInput.files && fileInput.files[0];
+      const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
+
+      if (picked) {
+        // 读取为 dataURL 并尝试提交到后端作为自定义皮肤
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const dataUrl = reader.result;
+          try {
+            if (isUser && window.BMApi) {
+              await window.BMApi.skins.currentSet(String(dataUrl));
+              const cur = await window.BMApi.skins.currentGet();
+              applySkin(cur);
+              updateSkinQuotaHint();
+            } else {
+              // 游客本地生效
+              document.documentElement.style.setProperty('--bg-img', `url(${dataUrl})`);
+              document.body.style.backgroundImage = `url(${dataUrl})`;
+              localStorage.setItem(KEYS.skin(), String(dataUrl));
+            }
+          } catch (_) { /* 静默失败 */ }
+          if (fileInput) fileInput.value = '';
+        };
+        reader.readAsDataURL(picked);
+        return;
       }
-    } catch (e) {
-      alert('设置皮肤失败：' + (e?.message || ''));
-    }
+
+      // 若未选择文件，则不做任何弹窗，仅忽略
+    } catch (_) { /* no-op */ }
   });
 
   if (els.skinUpload) els.skinUpload.addEventListener('change', async e => {
@@ -173,20 +187,20 @@ export function initSkin() {
         const cur = await window.BMApi.skins.currentGet(); if (cur) applySkin(cur);
         const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
         if (!isUser) return;
-        const list = await window.BMApi.skins.customList(); if (els.customSkinsList) {
-          els.customSkinsList.innerHTML = '';
-          list.forEach(item => {
-            const thumb = document.createElement('div');
-            thumb.className = 'preset-thumb';
-            thumb.title = item.name || '自定义皮肤';
-            thumb.style.backgroundImage = `url('${item.url}')`;
-            thumb.setAttribute('data-skin', item.url);
-            thumb.addEventListener('click', async () => {
-              try{ await window.BMApi.skins.currentSet(item.url); applySkin(await window.BMApi.skins.currentGet()); }catch(_){ }
+          const list = await window.BMApi.skins.customList(); if (els.customSkinsList) {
+            els.customSkinsList.innerHTML = '';
+            list.forEach(item => {
+              const thumb = document.createElement('div');
+              thumb.className = 'preset-thumb';
+              thumb.title = item.name || '自定义皮肤';
+              thumb.style.backgroundImage = `url('${item.url}')`;
+              thumb.setAttribute('data-skin', item.url);
+              thumb.addEventListener('click', async () => {
+              try{ await window.BMApi.skins.markCurrentCustom(item.id); applySkin(await window.BMApi.skins.currentGet()); }catch(_){ /* 忽略错误，本地仍可应用 */ }
+              });
+              els.customSkinsList.appendChild(thumb);
             });
-            els.customSkinsList.appendChild(thumb);
-          });
-        }
+          }
       } else {
         const reader = new FileReader(); reader.onload = () => {
           const url = reader.result; try { document.documentElement.style.setProperty('--bg-img', `url(${url})`); document.body.style.backgroundImage = `url(${url})`; localStorage.setItem(KEYS.skin(), url); incRole(role); updateSkinQuotaHint(); } catch (_) {}

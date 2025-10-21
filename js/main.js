@@ -18,12 +18,18 @@ import { initDrawer } from './drawer.js';
   // Cleanup potential blank B password
   try { const raw = localStorage.getItem(KEYS.bPwd); if (raw && raw.trim() === '') { localStorage.removeItem(KEYS.bPwd); } } catch(_){}
 
+  // 探测是否登录，设置模式
+  const hasToken = !!localStorage.getItem('bm_token');
+  state.mode = hasToken ? 'user' : 'guest';
+
   initServiceWorker();
   initEditableHeaders();
   initPageTitle();
   loadLinks(state.page);
   initAB();
   initLogin();
+  // 再次确保根据当前登录态隐藏/显示设置区内容
+  try { const ev = new Event('bm_login_state_applied'); window.dispatchEvent(ev); } catch(_){}
   initDrawer();
   initBPassDialog();
   initSkin();

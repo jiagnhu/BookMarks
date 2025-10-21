@@ -502,16 +502,30 @@
       }
     };
     btnLogout.onclick = ()=>{ state.user = null; localStorage.removeItem(KEYS.user); if(window.BMApi) window.BMApi.setToken(''); renderLoginState(); alert('已退出登录'); };
+    // 未登录隐藏修改密码入口；登录后显示
+    if(btnChangePwd){ btnChangePwd.style.display = localStorage.getItem('bm_token') ? 'inline-flex' : 'none'; }
     btnChangePwd.onclick = ()=>{ changeDlg.showModal(); };
     qs('#btnPwdCancel').onclick = ()=> changeDlg.close();
     qs('#btnPwdOk').onclick = async ()=>{
-      // If server exposes change password later, call it; for now keep local fallback
       const oldp = qs('#oldPwd').value, newp = qs('#newPwd').value;
-      const cur = localStorage.getItem(KEYS.loginPwd) || DEFAULT;
-      if(oldp!==cur){ alert('旧密码不正确'); return; }
       if(!newp){ alert('新密码不能为空'); return; }
-      localStorage.setItem(KEYS.loginPwd, newp);
-      changeDlg.close(); alert('已修改登录密码');
+      // 必须登录且具备后端 API 才允许修改
+      const hasToken = !!(window.BMApi && localStorage.getItem('bm_token'));
+      if(!hasToken){ alert('请先登录后再修改密码'); return; }
+      try{
+        if(window.BMApi){
+          await window.BMApi.auth.changePassword(oldp, newp);
+          changeDlg.close(); alert('已修改登录密码');
+        } else {
+          // 无后端时的兜底本地逻辑
+          const cur = localStorage.getItem(KEYS.loginPwd) || DEFAULT;
+          if(oldp!==cur){ alert('旧密码不正确'); return; }
+          localStorage.setItem(KEYS.loginPwd, newp);
+          changeDlg.close(); alert('已修改登录密码');
+        }
+      }catch(e){
+        alert((e?.message && e.message.includes('Old password')) ? '旧密码不正确' : ('修改失败：' + (e?.message || '')));
+      }
     };
     const btnResetAll = qs('#btnResetAll');
     if(btnResetAll) btnResetAll.onclick = ()=>{
@@ -657,20 +671,16 @@
         const item = e.target.closest('[data-skin]');
         if(!item) return;
         const url = item.getAttribute('data-skin');
+        // 选择预设皮肤：登录时调用接口记住选择；未登录仅本地应用
         try{
-          if(window.BMApi){
-            const res = await window.BMApi.request('/skins/current',{ method:'POST', body: JSON.stringify({ type:'preset', url }) });
-            const newUrl = (res && res.url) ? res.url : url;
-            document.body.style.backgroundImage = `url(${newUrl})`;
-            localStorage.setItem(KEYS.skin, newUrl);
-          } else {
-            document.body.style.backgroundImage = `url(${url})`;
-            localStorage.setItem(KEYS.skin, url);
+          const isUser = !!(window.BMApi && localStorage.getItem('bm_token'));
+          if(isUser && window.BMApi){
+            // 改用 PUT 标记当前预设，不消耗上传配额
+            await window.BMApi.skins.markCurrentPreset(url);
           }
-        }catch(_){
-          document.body.style.backgroundImage = `url(${url})`;
-          localStorage.setItem(KEYS.skin, url);
-        }
+        }catch(_){ /* 忽略网络错误，仍本地应用 */ }
+        document.body.style.backgroundImage = `url(${url})`;
+        localStorage.setItem(KEYS.skin, url);
         // active state
         qsa('.preset-thumb', presetSkins).forEach(el=> el.classList.toggle('active', el===item));
         if(skinUpload) skinUpload.value = '';

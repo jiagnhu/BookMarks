@@ -10,7 +10,11 @@ function scheduleSave() {
   const payload = { boardAlpha: Number(els.rngBoard.value), cardAlpha: Number(els.rngCard.value), vignette: Number(els.rngVig.value), showcaseWidth: Number(els.rngShow.value), contrast: document.body.classList.contains('contrast') };
   latestValues = payload;
   pendingTailSave = setTimeout(async () => {
-    try { if (window.BMApi) await window.BMApi.settings.put(latestValues); } catch (_) { /* ignore */ }
+    try {
+      const isUser = !!localStorage.getItem('bm_token');
+      if (isUser && window.BMApi) await window.BMApi.settings.put(latestValues);
+      else state.dirty.settings = true;
+    } catch (_) { /* ignore */ }
   }, 500);
 }
 
@@ -63,6 +67,24 @@ export async function initAppearance() {
     });
   });
   applyAppearance();
+
+  // Bind quick actions
+  const btnAdapt = els.btnAdaptLight;
+  if (btnAdapt) btnAdapt.addEventListener('click', () => {
+    adaptForLightWallpaper();
+  });
+  const btnReset = document.getElementById('btnResetAppearance');
+  if (btnReset) btnReset.addEventListener('click', async () => {
+    els.rngBoard.value = 55; els.rngCard.value = 55; els.rngVig.value = 25; els.rngShow.value = 28;
+    document.body.classList.remove('contrast');
+    localStorage.setItem(KEYS.ui.contrast, '0');
+    await applyAppearance();
+    try {
+      const isUser = !!localStorage.getItem('bm_token');
+      if (isUser && window.BMApi) await window.BMApi.settings.put({ boardAlpha:55, cardAlpha:55, vignette:25, showcaseWidth:28, contrast:false });
+    } catch(_){}
+    // no prompt
+  });
 }
 
 export function adaptForLightWallpaper() {
@@ -71,4 +93,3 @@ export function adaptForLightWallpaper() {
   document.body.classList.add('contrast');
   localStorage.setItem(KEYS.ui.contrast, '1');
 }
-

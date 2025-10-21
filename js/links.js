@@ -6,12 +6,21 @@ export async function loadLinks(page) {
   let arr = [];
   try {
     if (window.BMApi) {
-      const data = await window.BMApi.pages.bookmarks.list(page);
-      arr = Array.isArray(data)
-        ? data
-            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .map((it, idx) => ({ id: it.id, name: it.name || `链接 ${idx + 1}`, url: it.url || '' }))
-        : [];
+      const token = localStorage.getItem('bm_token');
+      let data;
+      if (token) {
+        // 登录用户使用 /links JSON 存储（统一20槽位）
+        data = await window.BMApi.links.get(page);
+        arr = Array.isArray(data) ? data.map((it, idx) => ({ name: it.name || `链接 ${idx + 1}`, url: it.url || '' })) : [];
+      } else {
+        // 游客沿用公共接口（A/B各自的公共列表，已seed 6条）
+        data = await window.BMApi.pages.bookmarks.list(page);
+        arr = Array.isArray(data)
+          ? data
+              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+              .map((it, idx) => ({ id: it.id, name: it.name || `链接 ${idx + 1}`, url: it.url || '' }))
+          : [];
+      }
     }
   } catch (_) {
     const raw = localStorage.getItem(KEYS.links(page));
@@ -61,9 +70,15 @@ export async function loadLinks(page) {
 
   async function persistAll(newArr) {
     try {
-      const items = newArr.map((it, idx) => ({ id: it.id, order: idx, name: it.name || `链接 ${idx + 1}`, url: it.url || '' }));
-      if (window.BMApi) await window.BMApi.pages.bookmarks.saveAll(page, items);
-      localStorage.setItem(KEYS.links(page), JSON.stringify(newArr));
+      const token = localStorage.getItem('bm_token');
+      if (token) {
+        // 用户：直接PUT /links 保存整个数组
+        const items = newArr.map((it) => ({ name: it.name || '', url: it.url || '' }));
+        await window.BMApi.links.put(page, items);
+      } else {
+        // 游客：只在本地保存（只读公共端，不再尝试PUT服务端）
+        localStorage.setItem(KEYS.links(page), JSON.stringify(newArr));
+      }
     } catch (err) {
       localStorage.setItem(KEYS.links(page), JSON.stringify(newArr));
       console.warn('[bm] saveAll fallback local only:', err?.message || err);
@@ -85,4 +100,3 @@ export async function loadLinks(page) {
     persistAll(arr).then(() => { els.linkDlg.close(); loadLinks(page); });
   };
 }
-

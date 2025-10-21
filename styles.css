@@ -100,7 +100,8 @@ header{padding:32px 20px 12px; text-align:center; position:relative; display:fle
 .link-card a{color:#dbeafe; text-decoration:none; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%; cursor:pointer}
 .link-card a:hover{text-decoration:underline}
 .link-card small{color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%}
-.link-actions{display:flex; gap:8px}
+.link-actions{display:flex; gap:8px; opacity:0; pointer-events:none; transition:opacity .15s ease}
+.link-card:hover .link-actions{ opacity:1; pointer-events:auto }
 .btn{padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:#141a29; color:var(--text); cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
 .btn.danger{border-color:#2b0f14; background:#1b0d10; color:#fecaca}
@@ -110,6 +111,14 @@ header{padding:32px 20px 12px; text-align:center; position:relative; display:fle
 .btn.link{ background:transparent; border:0; color:var(--accent); padding:0; font-size:12px; line-height:1; cursor:pointer }
 .btn.link:hover{ text-decoration:underline }
 .tag{display:inline-block; padding:4px 8px; border:1px solid var(--border); border-radius:999px; font-size:12px; color:var(--muted); background:rgba(20,27,39,.7)}
+
+/* Dialog base styles reuse */
+dialog{ border:0; border-radius:14px; padding:0; background:rgba(14,18,26,.96); color:var(--text); box-shadow:var(--shadow); }
+dialog::backdrop{ background: rgba(0,0,0,.45); backdrop-filter: blur(2px); }
+.dlg-head{ font-weight:700; padding:14px 16px; border-bottom:1px solid var(--border); }
+.dlg-body{ padding:14px 16px; color:var(--text); }
+.dlg-foot{ display:flex; gap:10px; justify-content:flex-end; padding:14px 16px; border-top:1px solid var(--border); }
+.dlg-foot .save{ padding:8px 10px; border-radius:10px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer }
 
 /* B-page password icon button to avoid layout shift */
 #btnSetBPass.icon-btn{ width:36px; height:36px; min-width:36px; padding:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; position:absolute; top:50%; transform:translateY(-50%); }

@@ -29,9 +29,16 @@ export function switchToPage(p, pushState = true) {
     els.btnSetBPass.classList.remove('hidden');
     positionLockIcon();
     updateBPassButtonText();
-    const stored = (localStorage.getItem(KEYS.bPwd) || '').trim();
+    const token = localStorage.getItem('bm_token');
     const authed = sessionStorage.getItem(KEYS.bAuthed) === '1';
-    if (stored && !authed) { requireBAuth(); }
+    if (!token) {
+      // 游客：仅在本地设置了口令时要求验证
+      const stored = (localStorage.getItem(KEYS.bPwd) || '').trim();
+      if (stored && !authed) { requireBAuth(); }
+    } else {
+      // 登录：统一走后端验证（是否设置口令由后端决定）
+      if (!authed) { requireBAuth(); }
+    }
   } else {
     sessionStorage.removeItem(KEYS.bAuthed);
     els.btnSetBPass.classList.add('hidden');
@@ -54,8 +61,14 @@ export function positionLockIcon() {
 
 export function updateBPassButtonText() {
   if (!els.btnSetBPass) return;
-  const has = !!(localStorage.getItem(KEYS.bPwd) || '').trim();
-  els.btnSetBPass.classList.toggle('lock-set', has);
+  const token = localStorage.getItem('bm_token');
+  if (!token) {
+    const has = !!(localStorage.getItem(KEYS.bPwd) || '').trim();
+    els.btnSetBPass.classList.toggle('lock-set', has);
+  } else {
+    // 登录态下无法即时知道后端是否设置了口令，这里保持样式不强依赖；可按需调用后端获取 hasBPassword
+    els.btnSetBPass.classList.remove('hidden');
+  }
 }
 
 export function requireBAuth() {
@@ -86,4 +99,3 @@ export function requireBAuth() {
     } catch (_) { alert('验证失败'); }
   };
 }
-

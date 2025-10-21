@@ -5,6 +5,8 @@ export const state = {
   linkIdxEditing: null,
   skinImage: null,
   quotas: { normal: 3 },
+  mode: 'guest',
+  dirty: { pageA: false, pageB: false, settings: false, skin: false },
 };
 
 // LocalStorage/session keys used by the app
@@ -29,4 +31,3 @@ export const KEYS = {
 
 export const DEFAULT_TITLE = 'My BookMarks';
 export const DEFAULT_MOTTO = '简洁 · 可编辑 · 可离线加载';
-
