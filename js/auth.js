@@ -51,13 +51,17 @@ export function initLogin() {
     const saved = localStorage.getItem(KEYS.user);
     if (saved) {
       els.avatar.textContent = saved.slice(0, 1).toUpperCase();
+      try { els.avatar.setAttribute('data-name', saved); } catch(_){}
       els.avatar.classList.add('show');
       els.btnLoginTop.style.display = 'none';
       if (els.btnLogout) els.btnLogout.style.display = 'inline-flex';
+      try { if (els.accountUsername) { els.accountUsername.textContent = saved; } } catch(_){}
     } else {
       els.avatar.classList.remove('show');
+      try { els.avatar.removeAttribute('data-name'); } catch(_){}
       els.btnLoginTop.style.display = 'inline-flex';
       if (els.btnLogout) els.btnLogout.style.display = 'none';
+      try { if (els.accountUsername) { els.accountUsername.textContent = '未登录'; } } catch(_){}
     }
   }
   (function () {
@@ -193,7 +197,7 @@ export function initLogin() {
         const mod = await import('./appearance.js');
         if (mod && mod.initAppearance) await mod.initAppearance();
       }catch(_){ }
-      // 2) 当前皮肤
+      // 2) 当前皮肤 + 自定义皮肤列表
       try{
         if (window.BMApi){
           const cur = await window.BMApi.skins.currentGet();
@@ -201,6 +205,8 @@ export function initLogin() {
           document.documentElement.style.setProperty('--bg-img', `url(${url})`);
           document.body.style.backgroundImage = `url(${url})`;
           localStorage.setItem(KEYS.skin(), url);
+          // 刷新自定义皮肤列表
+          try { const mod = await import('./skin.js'); if (mod && mod.initSkin) mod.initSkin(); } catch(_){}
         }
       }catch(_){ }
       // 3) 刷新当前页链接（登录态切换为 /links 源）

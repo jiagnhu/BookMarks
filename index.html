@@ -28,8 +28,8 @@
   <meta name="theme-color" content="#111" />
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="stylesheet" href="styles.css" />
-  <script>window.API_BASE = '/api/v1';</script>
-  <!-- <script>window.API_BASE = 'http://localhost:4000/api/v1';</script> -->
+  <!-- <script>window.API_BASE = '/api/v1';</script> -->
+  <script>window.API_BASE = 'http://localhost:4000/api/v1';</script>
 
   <script src="api.js"></script>
   </head>
@@ -98,7 +98,9 @@
     <div class="hd">
       <strong>设置</strong>
       <div style="display:flex; gap:8px; align-items:center">
-        <button class="btn danger" id="btnCloseDrawer">关闭</button>
+        <button class="btn icon-btn danger" id="btnCloseDrawer" title="关闭" aria-label="关闭">
+          <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" d="M6.225 4.811A1 1 0 1 0 4.81 6.225L10.586 12l-5.775 5.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775A1 1 0 0 0 17.775 4.81L12 10.586L6.225 4.811Z"/></svg>
+        </button>
       </div>
     </div>
     <div class="bd">
@@ -134,6 +136,10 @@
       
       <section id="accountSection">
         <h4 style="margin:8px 0">账户</h4>
+        <div class="row" id="rowUsername" style="margin-bottom: 6px;">
+          <label>用户名</label>
+          <div id="accountUsername" class="tag" style="min-width:0;">未登录</div>
+        </div>
         <div class="row" style="margin-bottom: 10px;"><label>修改密码</label><button class="btn" id="btnChangePwd">打开</button></div>
         <div class="row" id="btnLogout"><label>退出</label><button class="btn" >退出登录</button></div>
       </section>
@@ -146,7 +152,7 @@
     <div class="dlg-body">
       <div class="dlg-row"><label>名称</label><input type="text" id="linkName" /></div>
       <div class="dlg-row"><label>URL</label><input type="url" id="linkUrl" placeholder="https://" /></div>
-      <div class="hint">保存后展示为：名称（点击跳转） · 小字显示URL</div>
+      <div class="hint">保存后展示为：名称（点击跳转）</div>
     </div>
     <div class="dlg-foot">
       <button class="btn" id="btnLinkCancel">取消</button>
@@ -213,7 +219,16 @@
   <dialog id="dlgBPass">
     <div class="dlg-head">B页独立密码</div>
     <div class="dlg-body">
-      <div class="dlg-row"><label>密码</label><input type="password" id="bPass" placeholder="留空为不设密码" /></div>
+      <div class="dlg-row">
+        <label>密码</label>
+        <div class="pwd-wrap">
+          <input type="password" id="bPass" placeholder="可留空或任意字符" />
+          <button type="button" class="eye-btn" id="toggleBPass" aria-label="显示/隐藏密码">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4.5c-4.97 0-9.16 3.11-10.82 7.5c1.66 4.39 5.85 7.5 10.82 7.5s9.16-3.11 10.82-7.5C21.16 7.61 16.97 4.5 12 4.5Zm0 12.5a5 5 0 1 1 0-10a5 5 0 0 1 0 10Zm0-2a3 3 0 1 0 0-6a3 3 0 0 0 0 6Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="hint" id="bPassErr" hidden></div>
       <div class="hint">设置或清空后保存，进入B页时将要求验证（留空则无需验证）。</div>
     </div>
     <div class="dlg-foot">
@@ -225,7 +240,16 @@
   <dialog id="dlgAskB">
     <div class="dlg-head">请输入B页密码</div>
     <div class="dlg-body">
-      <div class="dlg-row"><label>密码</label><input type="password" id="askBPwd" /></div>
+      <div class="dlg-row">
+        <label>密码</label>
+        <div class="pwd-wrap">
+          <input type="password" id="askBPwd" placeholder="输入设置的B页密码" />
+          <button type="button" class="eye-btn" id="toggleAskB" aria-label="显示/隐藏密码">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4.5c-4.97 0-9.16 3.11-10.82 7.5c1.66 4.39 5.85 7.5 10.82 7.5s9.16-3.11 10.82-7.5C21.16 7.61 16.97 4.5 12 4.5Zm0 12.5a5 5 0 1 1 0-10a5 5 0 0 1 0 10Zm0-2a3 3 0 1 0 0-6a3 3 0 0 0 0 6Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="hint" id="askBErr" hidden></div>
       <div class="hint">若未设置密码，可直接确认。</div>
     </div>
     <div class="dlg-foot">

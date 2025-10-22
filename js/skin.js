@@ -21,6 +21,34 @@ async function updateSkinQuotaHint() {
   if (els.skinQuotaHint) els.skinQuotaHint.textContent = `自定义皮肤剩余上传次数：${left}`;
 }
 
+function renderCustomSkins(list){
+  if (!els.customSkinsList) return;
+  els.customSkinsList.innerHTML = '';
+  if (!Array.isArray(list)) return;
+  list.forEach(item => {
+    const thumb = document.createElement('div');
+    thumb.className = 'preset-thumb';
+    thumb.title = item.name || '自定义皮肤';
+    thumb.style.backgroundImage = `url('${item.url}')`;
+    thumb.setAttribute('data-skin', item.url);
+    thumb.addEventListener('click', async () => {
+      try {
+        const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
+        if (isUser && window.BMApi && item.id != null) {
+          await window.BMApi.skins.markCurrentCustom(item.id);
+          applySkin(await window.BMApi.skins.currentGet());
+        }
+      } catch(_) { }
+      try {
+        document.documentElement.style.setProperty('--bg-img', `url(${item.url})`);
+        document.body.style.backgroundImage = `url(${item.url})`;
+        localStorage.setItem(KEYS.skin(), item.url);
+      } catch(_) {}
+    });
+    els.customSkinsList.appendChild(thumb);
+  });
+}
+
 export function initSkin() {
   updateSkinQuotaHint();
   // 未登录隐藏自定义皮肤区（精确定位到对应的行容器）
@@ -89,32 +117,7 @@ export function initSkin() {
           const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
           if (!isUser) throw new Error('guest-mode-no-custom');
           const list = await window.BMApi.skins.customList();
-          if (Array.isArray(list) && els.customSkinsList) {
-            els.customSkinsList.innerHTML = '';
-            list.forEach(item => {
-              const thumb = document.createElement('div');
-              thumb.className = 'preset-thumb';
-              thumb.title = item.name || '自定义皮肤';
-              thumb.style.backgroundImage = `url('${item.url}')`;
-              thumb.setAttribute('data-skin', item.url);
-              thumb.addEventListener('click', async () => {
-                // 登录：PUT 标记当前自定义（按 id）；未登录：仅本地
-                try {
-                  const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
-                  if (isUser && window.BMApi && item.id != null) {
-                    await window.BMApi.skins.markCurrentCustom(item.id);
-                  }
-                } catch(_) { /* 忽略接口错误 */ }
-                try {
-                  state.dirty.skin = true;
-                  document.documentElement.style.setProperty('--bg-img', `url(${item.url})`);
-                  document.body.style.backgroundImage = `url(${item.url})`;
-                  localStorage.setItem(KEYS.skin(), item.url);
-                } catch(_) {}
-              });
-              els.customSkinsList.appendChild(thumb);
-            });
-          }
+          renderCustomSkins(list);
         } catch (_) { /* ignore */ }
       }
     } catch (_) { /* ignore network */ }
@@ -157,6 +160,8 @@ export function initSkin() {
               const cur = await window.BMApi.skins.currentGet();
               applySkin(cur);
               updateSkinQuotaHint();
+              // 上传并应用后，刷新“我的皮肤”列表
+              try { const list = await window.BMApi.skins.customList(); renderCustomSkins(list); } catch(_){ }
             } else {
               // 游客本地生效
               document.documentElement.style.setProperty('--bg-img', `url(${dataUrl})`);
@@ -187,20 +192,7 @@ export function initSkin() {
         const cur = await window.BMApi.skins.currentGet(); if (cur) applySkin(cur);
         const isUser = state.mode === 'user' && !!(window.BMApi && localStorage.getItem('bm_token'));
         if (!isUser) return;
-          const list = await window.BMApi.skins.customList(); if (els.customSkinsList) {
-            els.customSkinsList.innerHTML = '';
-            list.forEach(item => {
-              const thumb = document.createElement('div');
-              thumb.className = 'preset-thumb';
-              thumb.title = item.name || '自定义皮肤';
-              thumb.style.backgroundImage = `url('${item.url}')`;
-              thumb.setAttribute('data-skin', item.url);
-              thumb.addEventListener('click', async () => {
-              try{ await window.BMApi.skins.markCurrentCustom(item.id); applySkin(await window.BMApi.skins.currentGet()); }catch(_){ /* 忽略错误，本地仍可应用 */ }
-              });
-              els.customSkinsList.appendChild(thumb);
-            });
-          }
+          const list = await window.BMApi.skins.customList(); renderCustomSkins(list);
       } else {
         const reader = new FileReader(); reader.onload = () => {
           const url = reader.result; try { document.documentElement.style.setProperty('--bg-img', `url(${url})`); document.body.style.backgroundImage = `url(${url})`; localStorage.setItem(KEYS.skin(), url); incRole(role); updateSkinQuotaHint(); } catch (_) {}

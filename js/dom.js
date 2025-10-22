@@ -17,6 +17,7 @@ export const els = {
   skinUpload: null, btnApplySkin: null, presetSkins: null, customSkins: null,
   customSkinsList: null, skinQuotaHint: null,
   btnLogout: null, btnChangePwd: null,
+  accountUsername: null,
   rngBoard: null, valBoard: null, rngCard: null, valCard: null,
   rngVig: null, valVig: null, rngShow: null, valShow: null,
 };
@@ -72,6 +73,7 @@ export function bindElements() {
 
   els.btnLogout = qs('#btnLogout');
   els.btnChangePwd = qs('#btnChangePwd');
+  els.accountUsername = qs('#accountUsername');
 
   els.rngBoard = qs('#rngBoard');
   els.valBoard = qs('#valBoard');
@@ -82,4 +84,3 @@ export function bindElements() {
   els.rngShow = qs('#rngShowcase');
   els.valShow = qs('#valShowcase');
 }
-

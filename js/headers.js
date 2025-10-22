@@ -23,19 +23,26 @@ export function initEditableHeaders() {
   };
 
   // Brand
-  els.brandEditBtn.addEventListener('click', e => {
+  const openBrand = (e) => {
     e.stopPropagation();
     if (els.brandWrap.classList.contains('editing')) { closeEditor(els.brandWrap, els.brandPanel); return; }
     const stored = localStorage.getItem(KEYS.title(state.page));
     const initial = stored !== null ? stored : els.brandText.textContent;
     openEditor(els.brandWrap, els.brandPanel, els.brandInput, initial);
+  };
+  els.brandEditBtn.addEventListener('click', openBrand);
+  // 在移动端或任何场景，点击文案区域也可开启编辑
+  els.brandWrap.addEventListener('click', (e)=>{
+    if (!els.brandWrap.classList.contains('editing')) openBrand(e);
   });
-  els.brandCancel.addEventListener('click', () => {
+  els.brandCancel.addEventListener('click', (e) => {
+    e.stopPropagation();
     const stored = localStorage.getItem(KEYS.title(state.page));
     els.brandInput.value = stored !== null ? stored : (els.brandText ? els.brandText.textContent : DEFAULT_TITLE);
     closeEditor(els.brandWrap, els.brandPanel);
   });
-  els.brandSave.addEventListener('click', async () => {
+  els.brandSave.addEventListener('click', async (e) => {
+    e.stopPropagation();
     const value = els.brandInput.value.trim();
     try {
       if (window.BMApi) await window.BMApi.pages.update(state.page, { title: value || null });
@@ -54,19 +61,25 @@ export function initEditableHeaders() {
   });
 
   // Motto
-  els.mottoEditBtn.addEventListener('click', e => {
+  const openMotto = (e) => {
     e.stopPropagation();
     if (els.mottoWrap.classList.contains('editing')) { closeEditor(els.mottoWrap, els.mottoPanel); return; }
     const stored = localStorage.getItem(KEYS.motto(state.page));
     const initial = stored !== null && stored !== undefined ? stored : els.mottoText.textContent;
     openEditor(els.mottoWrap, els.mottoPanel, els.mottoInput, initial);
+  };
+  els.mottoEditBtn.addEventListener('click', openMotto);
+  els.mottoWrap.addEventListener('click', (e)=>{
+    if (!els.mottoWrap.classList.contains('editing')) openMotto(e);
   });
-  els.mottoCancel.addEventListener('click', () => {
+  els.mottoCancel.addEventListener('click', (e) => {
+    e.stopPropagation();
     const stored = localStorage.getItem(KEYS.motto(state.page));
     els.mottoInput.value = stored !== null && stored !== undefined ? stored : (els.mottoText ? els.mottoText.textContent : DEFAULT_MOTTO);
     closeEditor(els.mottoWrap, els.mottoPanel);
   });
-  els.mottoSave.addEventListener('click', async () => {
+  els.mottoSave.addEventListener('click', async (e) => {
+    e.stopPropagation();
     const value = els.mottoInput.value.trim();
     try {
       if (window.BMApi) await window.BMApi.pages.update(state.page, { motto: value || null });
@@ -124,4 +137,3 @@ export async function initPageTitle() {
   if (els.brandInput) els.brandInput.value = title || (els.brandText ? els.brandText.textContent : DEFAULT_TITLE);
   if (els.mottoInput) els.mottoInput.value = motto || (els.mottoText ? els.mottoText.textContent : DEFAULT_MOTTO);
 }
-
