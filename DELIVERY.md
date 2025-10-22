@@ -2,8 +2,10 @@
 
 本文档紧贴仓库当前实现，描述真实存在的交互、功能、接口、部署方式。
 
-- 前端：原生 HTML/CSS/JS + PWA（Service Worker）
+- 前端：原生 HTML/CSS/JS + Vite 构建 + PWA（Service Worker）
   - 关键文件：`index.html`, `styles.css`, `api.js`, `js/*.js`, `sw.js`
+  - 构建配置：`vite.config.js`
+  - 运行脚本：`package.json` 中的 `dev/build/preview`
 - 后端：Node.js + Express + Prisma（MySQL）
   - 关键文件：`server/src/**/*.ts`, `server/prisma/schema.prisma`, `server/prisma/seed.ts`
 - 运行要求：Node v20.19.5；MySQL 8+；现代浏览器（支持 Service Worker）
@@ -48,7 +50,12 @@
 
 ## 3. 后端接口（按路由文件整理）
 
-以下路径均带前缀 `/api/v1`（前端在 `index.html` 通过 `window.API_BASE` 配置为 `http://localhost:4000/api/v1`）。
+以下路径均带前缀 `/api/v1`。
+前端通过 Vite 环境变量注入 `window.API_BASE`，在 `index.html` 中以
+`<script>window.API_BASE = import.meta.env.VITE_API_BASE;</script>` 形式使用：
+
+- 开发环境（`npm run dev`）：`.env.development` 设置 `VITE_API_BASE=http://localhost:4000/api/v1`
+- 生产构建（`npm run build` / `npm run preview`）：`.env` 设置 `VITE_API_BASE=/api/v1`
 
 - 认证 `server/src/routes/auth.ts`
   - POST `/auth/register` { username, password } → { token, user }
@@ -118,7 +125,14 @@
   - 部署 `index.html`, `styles.css`, `api.js`, `js/`, `images/`, `sw.js`, `favicon.ico` 至站点根目录。
   - 确保 `sw.js` 位于站点根（与注册路径一致），MIME 为 JS。
   - 如前后端不同域名：在 `index.html` 设置 `window.API_BASE`；后端开启 CORS；Service Worker 作用域以前端域为准。
-  - 构建 npm run build
+  - 开发与构建
+    - 开发：`npm run dev`（Vite 开发服务器，前端 API 指向 `http://localhost:4000/api/v1`）
+    - 构建：`npm run build`（输出到 `dist/`；默认 `window.API_BASE` 为 `/api/v1`）
+    - 预览：`npm run preview`
+  - 静态托管时注意
+    - 将 `dist/` 作为网站根目录提供；
+    - 确保 `sw.js` 位于站点根路径并可通过 `https://<域名>/sw.js` 访问（可在构建后将根目录 `sw.js` 复制到 `dist/sw.js` 一并部署，或使用静态复制插件）；
+    - 线上必须使用 HTTPS（或本地 `http://localhost`）以启用 Service Worker。
   - 启动 pm2 start node --name bookmarks -- server/dist/index.js
 
 - 后端服务
