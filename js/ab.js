@@ -78,23 +78,27 @@ export function requireBAuth() {
     if (!stored) { localStorage.removeItem(KEYS.bPwd); sessionStorage.setItem(KEYS.bAuthed, '1'); return; }
     if (sessionStorage.getItem(KEYS.bAuthed) === '1') { return; }
     els.askBDlg.showModal();
-    qs('#btnAskBCancel').onclick = () => { els.askBDlg.close(); location.href='?page=A'; };
+    try { const i = qs('#askBPwd'); if (i) { i.value=''; i.focus(); } } catch(_){}
+    qs('#btnAskBCancel').onclick = () => { const i = qs('#askBPwd'); if (i) i.value=''; els.askBDlg.close(); location.href='?page=A'; };
     qs('#btnAskBOk').onclick = () => {
-      const v = (qs('#askBPwd').value || '').trim();
-      if (!stored) { els.askBDlg.close(); return; }
-      if (v === stored) { sessionStorage.setItem(KEYS.bAuthed, '1'); els.askBDlg.close(); }
+      const i = qs('#askBPwd');
+      const v = (i && i.value ? i.value.trim() : '');
+      if (!stored) { if (i) i.value=''; els.askBDlg.close(); return; }
+      if (v === stored) { sessionStorage.setItem(KEYS.bAuthed, '1'); if (i) i.value=''; els.askBDlg.close(); }
       else alert('密码不正确');
     };
     return;
   }
   if (sessionStorage.getItem(KEYS.bAuthed) === '1') { return; }
   els.askBDlg.showModal();
+  try { const i = qs('#askBPwd'); if (i) { i.value=''; i.focus(); } } catch(_){}
   qs('#btnAskBCancel').onclick = () => { els.askBDlg.close(); location.href='?page=A'; };
   qs('#btnAskBOk').onclick = async () => {
-    const v = (qs('#askBPwd').value || '').trim();
+    const inp = qs('#askBPwd');
+    const v = (inp && inp.value ? inp.value.trim() : '');
     try {
       const r = await window.BMApi.pages.verifyB(v);
-      if (r && (r.ok === true || r.ok === 'true')) { sessionStorage.setItem(KEYS.bAuthed, '1'); els.askBDlg.close(); }
+      if (r && (r.ok === true || r.ok === 'true')) { sessionStorage.setItem(KEYS.bAuthed, '1'); if (inp) inp.value = ''; els.askBDlg.close(); }
       else alert('密码不正确');
     } catch (_) { alert('验证失败'); }
   };

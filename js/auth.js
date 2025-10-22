@@ -21,23 +21,28 @@ export function initLogin() {
           const guestLinksA = localStorage.getItem(KEYS.links('A'));
           const guestLinksB = localStorage.getItem(KEYS.links('B'));
           window.BMApi.setToken(resp.token);
+          try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){}
           state.user = resp.user?.username || username;
           localStorage.setItem(KEYS.user, state.user);
           localStorage.setItem('bm_token', resp.token);
           state.mode = 'user';
           renderLoginState();
+          try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){}
+          try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)).catch(()=>{}); } catch(_){}
+          try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){}
           if (guestLinksA || guestLinksB) {
             try { await openSyncDialogAndHandle(guestLinksA, guestLinksB); } catch (_) { /* 忽略同步失败 */ }
           }
           clearLocalOverrides();
           // 登录后立即应用用户设置与皮肤，并刷新链接列表
           try { await applyUserSessionAfterLogin(); } catch(_){}
+          try { const iu = qs('#loginUser'); const ip = qs('#loginPwd'); if (iu) iu.value=''; if (ip) ip.value=''; } catch(_){}
           els.loginDlg.close();
           return;
         }
       }
       const expected = localStorage.getItem(KEYS.loginPwd) || DEFAULT;
-      if (password === expected) { state.user = username; localStorage.setItem(KEYS.user, state.user); state.mode = 'guest'; renderLoginState(); els.loginDlg.close(); }
+      if (password === expected) { state.user = username; localStorage.setItem(KEYS.user, state.user); state.mode = 'guest'; renderLoginState(); try { const iu = qs('#loginUser'); const ip = qs('#loginPwd'); if (iu) iu.value=''; if (ip) ip.value=''; } catch(_){} els.loginDlg.close(); }
       else { if (err) { err.textContent = '密码不正确'; err.hidden = false; } }
     } catch (e) { if (err) { err.textContent = '登录失败：' + (e?.message || ''); err.hidden = false; } }
   };
@@ -65,13 +70,16 @@ export function initLogin() {
 
   els.avatar.onclick = () => {
     if (confirm('确认退出登录？')) {
-      state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); state.mode = 'guest';
+      state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){} state.mode = 'guest';
       applyGuestDefaults();
-      try { const page = new URLSearchParams(location.search).get('page') || 'A'; (async()=>{ const { loadLinks } = await import('./links.js'); await loadLinks(page); })(); } catch(_){}
+      try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){}
+      try { const page = new URLSearchParams(location.search).get('page') || 'A'; import('./links.js').then(m=>m.loadLinks && m.loadLinks(page)).catch(()=>{}); } catch(_){}
+      try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){}
+      try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)).catch(()=>{}); } catch(_){}
       renderLoginState(); alert('已退出登录');
     }
   };
-  els.btnLogout.onclick = () => { state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); state.mode = 'guest'; applyGuestDefaults(); try { const page = new URLSearchParams(location.search).get('page') || 'A'; (async()=>{ const { loadLinks } = await import('./links.js'); await loadLinks(page); })(); } catch(_){} renderLoginState(); alert('已退出登录'); };
+  els.btnLogout.onclick = () => { state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){} state.mode = 'guest'; applyGuestDefaults(); try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){} try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)); } catch(_){} try { import('./links.js').then(m=>m.loadLinks && m.loadLinks('A')).catch(()=>{}); } catch(_){} try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){} renderLoginState(); alert('已退出登录'); };
   els.btnChangePwd.onclick = () => { els.changeDlg.showModal(); };
   qs('#btnPwdCancel').onclick = () => els.changeDlg.close();
   qs('#btnPwdOk').onclick = async () => {
@@ -262,11 +270,15 @@ export function initLogin() {
               const guestLinksA = localStorage.getItem(KEYS.links('A'));
               const guestLinksB = localStorage.getItem(KEYS.links('B'));
               window.BMApi.setToken(token);
+              try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){}
               state.user = (loginRes?.user?.username) || username;
               localStorage.setItem(KEYS.user, state.user);
               localStorage.setItem('bm_token', token);
               state.mode = 'user';
               renderLoginState();
+              try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){}
+              try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)).catch(()=>{}); } catch(_){}
+              try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){}
               if (guestLinksA || guestLinksB) { try { await openSyncDialogAndHandle(guestLinksA, guestLinksB); } catch(_){} }
               clearLocalOverrides();
               try { await applyUserSessionAfterLogin(); } catch(_){}
@@ -277,11 +289,16 @@ export function initLogin() {
           } catch (_) {
             const token = data.token;
             window.BMApi.setToken(token);
+            try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){}
             state.user = data.user?.username || username;
             localStorage.setItem(KEYS.user, state.user);
             localStorage.setItem('bm_token', token);
             state.mode = 'user';
             renderLoginState();
+            try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){}
+            try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)).catch(()=>{}); } catch(_){}
+            try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){}
+            try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){}
             const guestLinksA = localStorage.getItem(KEYS.links('A'));
             const guestLinksB = localStorage.getItem(KEYS.links('B'));
             if (guestLinksA || guestLinksB) { try { await openSyncDialogAndHandle(guestLinksA, guestLinksB); } catch(_){} }
