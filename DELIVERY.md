@@ -96,6 +96,8 @@
 
 ## 4. 数据与种子（`server/prisma/seed.ts`）
 
+- npm i -D ts-node typescript @types/node
+- 运行命令 node --loader ts-node/esm prisma/seed.ts
 - 初始化公共设置：透明度、暗角、展示区宽度、默认皮肤 URL。
 - 为公共 A/B 页面填充 20 个链接位，前 6 个写入示例链接，其余留空（名称为“链接 N”）。
 - 用户注册时自动创建：个人 A/B 页面、用户设置、皮肤上传配额（依用户类型）。
@@ -116,6 +118,8 @@
   - 部署 `index.html`, `styles.css`, `api.js`, `js/`, `images/`, `sw.js`, `favicon.ico` 至站点根目录。
   - 确保 `sw.js` 位于站点根（与注册路径一致），MIME 为 JS。
   - 如前后端不同域名：在 `index.html` 设置 `window.API_BASE`；后端开启 CORS；Service Worker 作用域以前端域为准。
+  - 构建 npm run build
+  - 启动 pm2 start node --name bookmarks -- server/dist/index.js
 
 - 后端服务
   - 配置环境变量：`server/.env` 示例包含 `DATABASE_URL`, `PORT`, `JWT_SECRET`。
