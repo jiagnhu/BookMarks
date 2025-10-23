@@ -11,6 +11,8 @@ model User {
   id           Int       @id @default(autoincrement())
   username     String    @unique @db.VarChar(64)
   passwordHash String    @db.VarChar(255)
+  email        String?   @unique @db.VarChar(128)
+  phone        String?   @unique @db.VarChar(32)
   avatar       String?   @db.VarChar(1)
   userType     UserType  @default(normal)
   createdAt    DateTime  @default(now())

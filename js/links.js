@@ -84,6 +84,9 @@ export async function loadLinks(page) {
     (idx < 10 ? els.colLeft : els.colRight).appendChild(card);
   });
 
+  // 通知：链接卡片已渲染完成，供布局等分计算使用
+  try { window.dispatchEvent(new Event('bm_links_rendered')); } catch(_) {}
+
   async function persistAll(newArr) {
     try {
       const token = localStorage.getItem('bm_token');

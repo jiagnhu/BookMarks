@@ -21,7 +21,7 @@ export function initBPassDialog() {
     try{
       if (token && window.BMApi) {
         await window.BMApi.pages.setBPassword(v);
-        // 登录态下不再使用本地口令
+        // 登录态下不再使用本地口令；仅当确实设置到后端后再移除本地
         localStorage.removeItem(KEYS.bPwd);
       } else {
         // 游客仅本地保存
