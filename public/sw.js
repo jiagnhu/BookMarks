@@ -29,11 +29,18 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(PRECACHE)
-      .then((cache) => cache.addAll(PRECACHE_ASSETS))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(PRECACHE);
+    for (const url of PRECACHE_ASSETS) {
+      try {
+        await cache.add(url);
+      } catch (e) {
+        // 不中断安装，记录失败项，避免 addAll 因单个 404/跨域失败导致整个 SW 安装失败
+        console.warn('[sw] precache failed:', url, e);
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
