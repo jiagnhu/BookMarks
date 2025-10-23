@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../prisma.js';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { requireAuth } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ router.post('/login', async (req, res, next) => {
     if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    const ok = await argon2.verify(user.passwordHash, password);
+    const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
     return res.json({ token, user: { id: user.id, username: user.username, avatar: user.avatar || 'U' } });
@@ -43,9 +43,9 @@ router.post('/change-password', requireAuth, async (req, res, next) => {
     }
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    const ok = await argon2.verify(user.passwordHash, oldPassword);
+    const ok = await bcrypt.compare(oldPassword, user.passwordHash);
     if (!ok) return res.status(400).json({ error: 'Old password incorrect' });
-    const newHash = await argon2.hash(newPassword);
+    const newHash = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({ where: { id: user.id }, data: { passwordHash: newHash } });
     return res.status(204).end();
   } catch (e) { next(e); }
@@ -63,7 +63,7 @@ router.post('/register', async (req, res, next) => {
     const { username, password } = parsed.data;
     const exists = await prisma.user.findUnique({ where: { username } });
     if (exists) return res.status(409).json({ error: 'Username already exists' });
-    const passwordHash = await argon2.hash(password);
+    const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.$transaction(async (tx) => {
       const u = await tx.user.create({ data: { username, passwordHash, avatar: username.slice(0,1).toUpperCase(), userType: 'normal' } });
       await tx.page.createMany({ data: [

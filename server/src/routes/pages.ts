@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma.js';
 import { requireAuth } from '../middleware/auth.js';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 
@@ -50,7 +50,7 @@ router.post('/B/password', async (req, res, next) => {
   try {
     const { password } = req.body || {};
     const code: 'B' = 'B';
-    const hash = password ? await argon2.hash(password) : null;
+    const hash = password ? await bcrypt.hash(password, 12) : null;
     await prisma.page.upsert({
       where: { userId_code: { userId: req.user!.id, code } },
       update: { bPasswordHash: hash },
@@ -65,7 +65,7 @@ router.post('/B/verify', async (req, res, next) => {
     const { password } = req.body || {};
     const p = await prisma.page.findFirst({ where: { userId: req.user!.id, code: 'B' } });
     if (!p || !p.bPasswordHash) return res.json({ ok: true });
-    const ok = await argon2.verify(p.bPasswordHash, password || '');
+    const ok = await bcrypt.compare(password || '', p.bPasswordHash);
     return res.json({ ok });
   } catch (e) { next(e); }
 });

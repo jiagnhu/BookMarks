@@ -1,21 +1,21 @@
 # 部署指南（npm 版，前后端）
 
-适用：本仓库的前端（Vite）与后端（server/）。使用 npm 与 pm2；Node 固定为 v20.19.5。
+适用：本仓库的前端（Vite）与后端（server/）。使用 npm 与 pm2；支持 Node 16.20.2 环境。
 
 ## 环境要求
 
-- Node：v20.19.5（必须）
+- Node：v16.20.2（或任意 16.x ≥16.14）
 - 包管理器：npm
 - 进程管理：pm2
 
-### 安装 Node v20.19.5（推荐 nvm）
+### 安装 Node v16.20.2（推荐 nvm）
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-nvm install 20.19.5 && nvm use 20.19.5 && nvm alias default 20.19.5
-node -v  # v20.19.5
+nvm install 16.20.2 && nvm use 16.20.2 && nvm alias default 16.20.2
+node -v  # v16.20.2
 ```
 
 ### 安装 pm2
@@ -36,7 +36,7 @@ PORT=4000
 JWT_SECRET="replace-with-a-strong-secret"
 ```
 
-2) 安装依赖：
+2) 安装依赖（已适配 Node 16）：
 ```bash
 npm install
 cd server && npm install && cd -
@@ -52,7 +52,7 @@ npm run prisma:migrate
 cd -
 ```
 
-4) 构建与本地验证：
+4) 构建与本地验证（TypeScript 需先构建）：
 ```bash
 cd server
 # 如为 TypeScript，请先构建（若有脚本）：
@@ -95,7 +95,7 @@ pm2 startup   # 按提示执行生成的命令以开机自启
 
 ## 故障排查（精简）
 
-- Node 版本：确保 `node -v` 为 `v20.19.5`；若 pm2 拿到的是系统 Node，先 `nvm use 20.19.5` 再启动 pm2。
+- Node 版本：确保 `node -v` 为 `v16.20.2`；若 pm2 拿到的是系统 Node，先 `nvm use 16.20.2` 再启动 pm2。
 - 端口占用：`lsof -i :3000`、`lsof -i :5173` 或使用 `ss -lntp` 检查。
 - 环境变量：确认 `server/.env` 内容与 pm2 进程工作目录（cwd）。必要时将关键变量写入 pm2 配置的 `env`。
 - 前端刷新 404：使用 `--spa` 或在 Nginx 中 `try_files $uri /index.html;`。
