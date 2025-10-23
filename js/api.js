@@ -47,6 +47,7 @@
       markCurrentPreset: (url)=> request('/skins/current',{ method:'PUT', body: JSON.stringify({ type:'preset', url }) }),
       markCurrentCustom: (id)=> request('/skins/current',{ method:'PUT', body: JSON.stringify({ type:'custom', id }) }),
       customList: ()=> request('/skins/custom'),
+      deleteCustom: (id)=> request(`/skins/custom/${id}`, { method:'DELETE' }),
     },
     settings:{
       get: ()=> getToken() ? request('/settings') : request('/settings/public'),

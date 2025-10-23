@@ -5,6 +5,7 @@ const PRECACHE = `${PREFIX}precache-${CACHE_VERSION}`;
 const RUNTIME = `${PREFIX}runtime-${CACHE_VERSION}`;
 
 // 预缓存核心资源（可根据项目实际调整）
+const ASSET_VER = '20251022';
 const PRECACHE_ASSETS = [
   '/',
   '/styles.css',
@@ -21,10 +22,10 @@ const PRECACHE_ASSETS = [
   '/js/headers.js',
   '/js/state.js',
   '/js/dom.js',
-  // 图片（如存在）
-  '/images/p1.jpeg',
-  '/images/p2.jpeg',
-  '/images/p3.jpeg'
+  // 图片（如存在）- 带版本参数避免旧缓存
+  `/images/p1.jpeg?v=${ASSET_VER}`,
+  `/images/p2.jpeg?v=${ASSET_VER}`,
+  `/images/p3.jpeg?v=${ASSET_VER}`
 ];
 
 self.addEventListener('install', (event) => {

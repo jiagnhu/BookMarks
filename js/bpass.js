@@ -33,6 +33,12 @@ export function initBPassDialog() {
       els.bpassDlg.close();
     }catch(e){ alert('保存失败：' + (e?.message || '')); }
   };
+  // Enter 提交保存
+  if (input) {
+    input.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter') { e.preventDefault(); btnSave && btnSave.click(); }
+    });
+  }
   // toggle eye
   const toggle = qs('#toggleBPass');
   if (toggle && input){

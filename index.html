@@ -26,16 +26,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My BookMarks</title>
   <meta name="theme-color" content="#111" />
-  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="stylesheet" href="styles.css" />
   <script>window.API_BASE = import.meta.env.VITE_API_BASE;</script>
 
-  <script src="api.js"></script>
+  <script type="module" src="js/api.js"></script>
   </head>
 <body>
   <div class="vignette" id="vignette"></div>
   <div class="app" id="app">
     <header>
+      <div class="header-mask" aria-hidden="true"></div>
       <div class="brand editable" data-field="title">
         <span class="text" id="brandText">My BookMarks</span>
         <button class="edit-btn" id="editBrand" type="button" aria-label="编辑书签名称">编辑</button>
@@ -106,7 +107,8 @@
       <h4 style="margin:4px 0">外观</h4>
       <div class="row"><label>内容透明度</label><input type="range" min="0" max="100" value="55" id="rngBoard" /><span class="tag" id="valBoard">55%</span></div>
       <div class="row"><label>卡片透明度</label><input type="range" min="0" max="100" value="55" id="rngCard" /><span class="tag" id="valCard">55%</span></div>
-      <div class="row"><label>遮罩强度</label><input type="range" min="0" max="100" value="25" id="rngVignette" /><span class="tag" id="valVignette">25%</span></div>
+      <div class="row"><label>全局遮罩</label><input type="range" min="0" max="100" value="25" id="rngVignette" /><span class="tag" id="valVignette">25%</span></div>
+      <div class="row"><label>Banner遮罩</label><input type="range" min="0" max="100" value="25" id="rngHeaderMask" /><span class="tag" id="valHeaderMask">25%</span></div>
       <div class="row"><label>背景窗口宽度</label><input type="range" min="0" max="50" value="28" id="rngShowcase" /><span class="tag" id="valShowcase">28vw</span></div>
       <div class="row"><label>浅色壁纸</label><button class="btn" id="btnAdaptLight">一键适配浅色壁纸</button></div>
       <div class="row"><label>恢复外观</label><button class="btn danger" id="btnResetAppearance">恢复</button></div>
@@ -206,8 +208,8 @@
   <dialog id="dlgChangePwd">
     <div class="dlg-head">修改登录密码</div>
     <div class="dlg-body">
-      <div class="dlg-row"><label>旧密码</label><input type="password" id="oldPwd" /></div>
-      <div class="dlg-row"><label>新密码</label><input type="password" id="newPwd" /></div>
+      <div class="dlg-row"><label>旧密码</label><input type="password" id="oldPwd" placeholder="至少 6 位" /></div>
+      <div class="dlg-row"><label>新密码</label><input type="password" id="newPwd" placeholder="至少 6 位" /></div>
     </div>
     <div class="dlg-foot">
       <button class="btn" id="btnPwdCancel">取消</button>

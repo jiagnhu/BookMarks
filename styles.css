@@ -9,6 +9,7 @@
   --board-alpha: .55;         /* 面板透明度 (0-1) */
   --card-alpha: .55;          /* 卡片透明度 (0-1) */
   --vignette-alpha: .25;      /* 遮罩强度 (0-1) */
+  --header-mask-alpha: .25;   /* Header 遮罩强度 (0-1) */
   --showcase-width: 28vw;     /* 中央背景窗口宽度 */
 }
 *{box-sizing:border-box}
@@ -27,7 +28,7 @@ body.contrast .link-card a{ text-shadow:0 1px 3px rgba(0,0,0,.35); }
 .app{min-height:100%; position:relative; z-index:1;}
 
 header{padding:32px 20px 12px; text-align:center; position:relative; display:flex; flex-direction:column; align-items:center; gap:6px}
-.header-mask{ position:absolute; inset:0; pointer-events:none; background: radial-gradient(60% 60% at center, rgba(0,0,0,0) 40%, rgba(0,0,0,var(--vignette-alpha)) 100%); opacity:1; z-index:0 }
+.header-mask{ position:absolute; inset:0; pointer-events:none; background: linear-gradient(to bottom, rgba(0,0,0, calc(var(--header-mask-alpha))) 0%, rgba(0,0,0, calc(var(--header-mask-alpha)*.6)) 45%, rgba(0,0,0,0) 100%); opacity:1; z-index:0 }
 .header > *{ position:relative; z-index:1 }
 .brand{font-weight:800; font-size:28px; letter-spacing:.4px}
 .subtitle{margin-top:0; color:#000}
@@ -335,6 +336,12 @@ footer{position:sticky; bottom:0; background:linear-gradient(180deg,rgba(12,17,2
 .preset-thumb::after{ content:''; position:absolute; inset:0; box-shadow:inset 0 0 0 2px rgba(255,255,255,.08); transition:box-shadow .15s ease }
 .preset-thumb:hover::after{ box-shadow:inset 0 0 0 2px rgba(96,165,250,.55) }
 .preset-thumb.active::after{ box-shadow:inset 0 0 0 2px var(--accent) }
+/* delete icon inside custom skin thumb */
+.preset-thumb .thumb-delete{ position:absolute; top:4px; right:4px; width:22px; height:22px; border:none; border-radius:50%; background:rgba(0,0,0,0.55); color:#fff; font-weight:700; line-height:22px; text-align:center; display:none; cursor:pointer; z-index:1 }
+.preset-thumb:hover .thumb-delete{ display:block; }
+@media (hover: none) and (pointer: coarse){
+  .preset-thumb .thumb-delete{ display:block; background:rgba(0,0,0,0.35); }
+}
 
 @media (hover: none){
   .editable .edit-btn{

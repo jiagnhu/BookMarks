@@ -29,6 +29,34 @@ router.get('/custom', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// 删除自定义皮肤，并归还一次上传配额；若删除的是当前皮肤，则回退到默认预设
+router.delete('/custom/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: 'Invalid id' });
+    await prisma.$transaction(async (tx) => {
+      const skin = await tx.skin.findUnique({ where: { id } });
+      if (!skin || skin.userId !== req.user!.id || skin.type !== 'custom') {
+        throw Object.assign(new Error('Not found'), { status: 404 });
+      }
+      await tx.skin.delete({ where: { id } });
+      // 归还配额（已用减一，不低于 0）
+      const q = await tx.quota.findUnique({ where: { userId: req.user!.id } });
+      if (q && q.skinUploadUsed > 0) {
+        await tx.quota.update({ where: { userId: req.user!.id }, data: { skinUploadUsed: { decrement: 1 } } });
+      }
+      // 如果删除的是当前皮肤，回退到默认预设
+      if (skin.isCurrent) {
+        await tx.skin.create({ data: { userId: req.user!.id, type: 'preset', url: '/images/p1.jpeg', isCurrent: true } });
+      }
+    });
+    res.json({ ok: true });
+  } catch (e: any) {
+    if (e?.status) return res.status(e.status).json({ error: e.message });
+    next(e);
+  }
+});
+
 router.post('/current', async (req, res, next) => {
   try {
     const { type, id, url, label } = req.body || {};

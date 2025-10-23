@@ -113,6 +113,9 @@ export function requireBAuth() {
       if (v === stored) { sessionStorage.setItem(KEYS.bAuthed, '1'); if (i) i.value=''; els.askBDlg.close(); }
       else alert('密码不正确');
     };
+    // Enter 提交
+    const i1 = qs('#askBPwd');
+    if (i1) i1.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { e.preventDefault(); qs('#btnAskBOk')?.click(); }});
     return;
   }
   if (sessionStorage.getItem(KEYS.bAuthed) === '1') { return; }
@@ -154,4 +157,7 @@ export function requireBAuth() {
       else alert('密码不正确');
     } catch (_) { alert('验证失败'); }
   };
+  // Enter 提交
+  const i2 = qs('#askBPwd');
+  if (i2) i2.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { e.preventDefault(); qs('#btnAskBOk')?.click(); }});
 }

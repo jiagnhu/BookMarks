@@ -119,10 +119,20 @@
   - API（同源且 GET）：Network-First，失败回退缓存。
 - 更新：前端可向 SW 发送 `postMessage('SKIP_WAITING')` 立即切换到新版本。
 
+### 静态图片的版本控制（避免缓存不更新）
+
+- 背景/缩略图图片位于 `public/images/`，对外以 `/images/...` 访问。
+- 为避免仅替换图片内容但文件名不变时命中旧缓存，采用“版本参数”策略：
+  - 前端引用：`js/skin.js` 在构造预设皮肤 URL 时追加 `?v=${import.meta.env.VITE_ASSET_VER}`。
+    - 在 `.env` 或 `.env.development` 中设置 `VITE_ASSET_VER`（如日期：`20251022`）。
+  - Service Worker 预缓存：`public/sw.js` 顶部常量 `ASSET_VER`，并在 PRECACHE 条目中以 `/images/p*.jpeg?v=${ASSET_VER}` 预缓存。
+  - 当图片内容更新时：同步修改 `.env` 的 `VITE_ASSET_VER` 与 `public/sw.js` 的 `ASSET_VER`，然后重新构建与发布，即可强制拉取新图。
+
 ## 6. 部署与运行
 
 - 前端静态资源
-  - 部署 `index.html`, `styles.css`, `api.js`, `js/`, `images/`, `sw.js`, `favicon.ico` 至站点根目录。
+  - 静态资源：将通用静态文件放入 `public/`（如 `public/images/`）。Vite 会原样复制到构建产物根（`dist/images/`）。
+  - 部署 `index.html`, `styles.css`, `api.js`, `js/`, `public/images/`（构建后为 `dist/images/`）, `sw.js`, `favicon.ico` 至站点根目录。
   - 确保 `sw.js` 位于站点根（与注册路径一致），MIME 为 JS。
   - 如前后端不同域名：在 `index.html` 设置 `window.API_BASE`；后端开启 CORS；Service Worker 作用域以前端域为准。
   - 开发与构建
@@ -131,7 +141,7 @@
     - 预览：`npm run preview`
   - 静态托管时注意
     - 将 `dist/` 作为网站根目录提供；
-    - 确保 `sw.js` 位于站点根路径并可通过 `https://<域名>/sw.js` 访问（可在构建后将根目录 `sw.js` 复制到 `dist/sw.js` 一并部署，或使用静态复制插件）；
+    - Service Worker：源码位于 `public/sw.js`，构建后自动出现在站点根（`/sw.js`），可通过 `https://<域名>/sw.js` 访问；
     - 线上必须使用 HTTPS（或本地 `http://localhost`）以启用 Service Worker。
   - 启动 pm2 start node --name bookmarks -- server/dist/index.js
 

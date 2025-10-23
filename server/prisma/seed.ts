@@ -7,7 +7,7 @@ async function main() {
   const hasSettings = await prisma.publicSettings.findFirst();
   if (!hasSettings) {
     await prisma.publicSettings.create({ data: {
-      boardAlpha: 55, cardAlpha: 55, vignette: 25, showcaseWidth: 28, contrast: false, skinUrl: '/images/p1.jpeg'
+      boardAlpha: 55, cardAlpha: 55, vignette: 25, headerMask: 25, showcaseWidth: 28, contrast: false, skinUrl: '/images/p1.jpeg'
     }});
   }
 

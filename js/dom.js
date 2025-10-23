@@ -20,6 +20,7 @@ export const els = {
   accountUsername: null,
   rngBoard: null, valBoard: null, rngCard: null, valCard: null,
   rngVig: null, valVig: null, rngShow: null, valShow: null,
+  rngHeaderMask: null, valHeaderMask: null,
 };
 
 export function bindElements() {
@@ -81,6 +82,8 @@ export function bindElements() {
   els.valCard = qs('#valCard');
   els.rngVig = qs('#rngVignette');
   els.valVig = qs('#valVignette');
+  els.rngHeaderMask = qs('#rngHeaderMask');
+  els.valHeaderMask = qs('#valHeaderMask');
   els.rngShow = qs('#rngShowcase');
   els.valShow = qs('#valShowcase');
 }

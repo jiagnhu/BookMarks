@@ -36,6 +36,8 @@ export function initLogin() {
           clearLocalOverrides();
           // 登录后立即应用用户设置与皮肤，并刷新链接列表
           try { await applyUserSessionAfterLogin(); } catch(_){}
+          // 登录后刷新皮肤配额与控件可用状态
+          try { import('./skin.js').then(m=>m.initSkin && m.initSkin()).catch(()=>{}); } catch(_){}
           try { const iu = qs('#loginUser'); const ip = qs('#loginPwd'); if (iu) iu.value=''; if (ip) ip.value=''; } catch(_){}
           els.loginDlg.close();
           return;
@@ -46,6 +48,12 @@ export function initLogin() {
       else { if (err) { err.textContent = '密码不正确'; err.hidden = false; } }
     } catch (e) { if (err) { err.textContent = '登录失败：' + (e?.message || ''); err.hidden = false; } }
   };
+  // 回车提交登录（阻止默认与冒泡）
+  try {
+    const onLoginEnter = (ev)=>{ if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); qs('#btnLoginOk')?.click(); } };
+    qs('#loginUser')?.addEventListener('keydown', onLoginEnter);
+    qs('#loginPwd')?.addEventListener('keydown', onLoginEnter);
+  } catch(_){}
 
   function updateAvatar() {
     const saved = localStorage.getItem(KEYS.user);
@@ -80,15 +88,25 @@ export function initLogin() {
       try { const page = new URLSearchParams(location.search).get('page') || 'A'; import('./links.js').then(m=>m.loadLinks && m.loadLinks(page)).catch(()=>{}); } catch(_){}
       try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){}
       try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)).catch(()=>{}); } catch(_){}
-      renderLoginState(); alert('已退出登录');
+      renderLoginState();
+      // 退出登录后刷新皮肤区（隐藏上传区并清理禁用状态）
+      try { import('./skin.js').then(m=>m.initSkin && m.initSkin()).catch(()=>{}); } catch(_){}
+      alert('已退出登录');
     }
   };
-  els.btnLogout.onclick = () => { state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){} state.mode = 'guest'; applyGuestDefaults(); try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){} try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)); } catch(_){} try { import('./links.js').then(m=>m.loadLinks && m.loadLinks('A')).catch(()=>{}); } catch(_){} try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){} renderLoginState(); alert('已退出登录'); };
+  els.btnLogout.onclick = () => { state.user = null; localStorage.removeItem(KEYS.user); localStorage.removeItem('bm_token'); if (window.BMApi) window.BMApi.setToken(''); try { sessionStorage.removeItem(KEYS.bAuthed); } catch(_){} state.mode = 'guest'; applyGuestDefaults(); try { history.replaceState({ page: 'A' }, '', '?page=A'); } catch(_){} try { import('./ab.js').then(m=>m.switchToPage && m.switchToPage('A', false)); } catch(_){} try { import('./links.js').then(m=>m.loadLinks && m.loadLinks('A')).catch(()=>{}); } catch(_){} try { import('./headers.js').then(m=>m.initPageTitle && m.initPageTitle()).catch(()=>{}); } catch(_){} renderLoginState(); try { import('./skin.js').then(m=>m.initSkin && m.initSkin()).catch(()=>{}); } catch(_){} alert('已退出登录'); };
   els.btnChangePwd.onclick = () => { els.changeDlg.showModal(); };
   qs('#btnPwdCancel').onclick = () => els.changeDlg.close();
+  // blur 校验：少于 6 位红框
+  const oldPwdEl = qs('#oldPwd');
+  const newPwdEl = qs('#newPwd');
+  const validateLen = (el)=>{ if (!el) return; const v = (el.value||'').trim(); el.classList.toggle('invalid', v.length>0 && v.length < 6); };
+  if (oldPwdEl){ oldPwdEl.addEventListener('blur', ()=>validateLen(oldPwdEl)); oldPwdEl.addEventListener('input', ()=> oldPwdEl.classList.remove('invalid')); }
+  if (newPwdEl){ newPwdEl.addEventListener('blur', ()=>validateLen(newPwdEl)); newPwdEl.addEventListener('input', ()=> newPwdEl.classList.remove('invalid')); }
   qs('#btnPwdOk').onclick = async () => {
     const oldp = qs('#oldPwd').value, newp = qs('#newPwd').value;
     if (!newp) { alert('新密码不能为空'); return; }
+    if ((newp||'').length < 6) { alert('新密码至少 6 位'); return; }
     // 必须登录且具备后端 API 才允许修改
     const hasToken = !!(window.BMApi && localStorage.getItem('bm_token'));
     if (!hasToken) { alert('请先登录后再修改密码'); return; }
@@ -103,6 +121,12 @@ export function initLogin() {
       else alert('修改失败：' + (e?.message || ''));
     }
   };
+  // 修改密码对话框：回车提交（阻止默认与冒泡）
+  try {
+    const onPwdEnter = (ev)=>{ if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); qs('#btnPwdOk')?.click(); } };
+    qs('#oldPwd')?.addEventListener('keydown', onPwdEnter);
+    qs('#newPwd')?.addEventListener('keydown', onPwdEnter);
+  } catch(_){}
   const btnResetAll = qs('#btnResetAll');
   if (btnResetAll) btnResetAll.onclick = () => {
     if (confirm('确认将登录密码重置为初始值，并清空B页密码？')) {
@@ -111,6 +135,13 @@ export function initLogin() {
       alert('已恢复到初始状态');
     }
   };
+
+  // 注册对话框：回车提交（阻止默认与冒泡）
+  try {
+    const onRegEnter = (ev)=>{ if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); qs('#btnRegisterOk')?.click(); } };
+    qs('#regUser')?.addEventListener('keydown', onRegEnter);
+    qs('#regPwd')?.addEventListener('keydown', onRegEnter);
+  } catch(_){}
 
   function renderLoginState() {
     updateAvatar();

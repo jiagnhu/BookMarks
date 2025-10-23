@@ -9,12 +9,13 @@ router.get('/public', async (_req, res, next) => {
     // 假定公共设置唯一，取 first 或创建默认
     let s = await prisma.publicSettings.findFirst();
     if (!s) {
-      s = await prisma.publicSettings.create({ data: { boardAlpha: 55, cardAlpha: 55, vignette: 25, showcaseWidth: 28, contrast: false, skinUrl: '/images/p1.jpeg' } });
+      s = await prisma.publicSettings.create({ data: { boardAlpha: 55, cardAlpha: 55, vignette: 25, headerMask: 25, showcaseWidth: 28, contrast: false, skinUrl: '/images/p1.jpeg' } });
     }
     res.json({
       boardAlpha: s.boardAlpha,
       cardAlpha: s.cardAlpha,
       vignette: s.vignette,
+      headerMask: s.headerMask,
       showcaseWidth: s.showcaseWidth,
       contrast: s.contrast,
       skinUrl: s.skinUrl,
@@ -35,6 +36,7 @@ router.get('/', async (req, res, next) => {
       boardAlpha: s.boardAlpha,
       cardAlpha: s.cardAlpha,
       vignette: s.vignette,
+      headerMask: s.headerMask,
       showcaseWidth: s.showcaseWidth,
       contrast: s.contrast,
     });
@@ -43,11 +45,11 @@ router.get('/', async (req, res, next) => {
 
 router.put('/', async (req, res, next) => {
   try {
-    const { boardAlpha, cardAlpha, vignette, showcaseWidth, contrast } = req.body || {};
+    const { boardAlpha, cardAlpha, vignette, headerMask, showcaseWidth, contrast } = req.body || {};
     await prisma.userSettings.upsert({
       where: { userId: req.user!.id },
-      update: { boardAlpha, cardAlpha, vignette, showcaseWidth, contrast },
-      create: { userId: req.user!.id, boardAlpha, cardAlpha, vignette, showcaseWidth, contrast },
+      update: { boardAlpha, cardAlpha, vignette, headerMask, showcaseWidth, contrast },
+      create: { userId: req.user!.id, boardAlpha, cardAlpha, vignette, headerMask, showcaseWidth, contrast },
     });
     res.status(204).end();
   } catch (e) { next(e); }
