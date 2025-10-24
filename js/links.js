@@ -13,13 +13,19 @@ export async function loadLinks(page) {
         data = await window.BMApi.links.get(page);
         arr = Array.isArray(data) ? data.map((it, idx) => ({ name: it.name || `链接 ${idx + 1}`, url: it.url || '' })) : [];
       } else {
-        // 游客沿用公共接口（A/B各自的公共列表，已seed 6条）
-        data = await window.BMApi.pages.bookmarks.list(page);
-        arr = Array.isArray(data)
-          ? data
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map((it, idx) => ({ id: it.id, name: it.name || `链接 ${idx + 1}`, url: it.url || '' }))
-          : [];
+        // 未登录：优先使用本地缓存；若无本地数据，再回退到公共只读接口
+        const raw = localStorage.getItem(KEYS.links(page));
+        const localArr = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(localArr) && localArr.length) {
+          arr = localArr.map((it, idx) => ({ name: it.name || `链接 ${idx + 1}`, url: it.url || '' }));
+        } else {
+          data = await window.BMApi.pages.bookmarks.list(page);
+          arr = Array.isArray(data)
+            ? data
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                .map((it, idx) => ({ id: it.id, name: it.name || `链接 ${idx + 1}`, url: it.url || '' }))
+            : [];
+        }
       }
     }
   } catch (_) {
@@ -84,8 +90,33 @@ export async function loadLinks(page) {
     (idx < 10 ? els.colLeft : els.colRight).appendChild(card);
   });
 
-  // 通知：链接卡片已渲染完成，供布局等分计算使用
-  try { window.dispatchEvent(new Event('bm_links_rendered')); } catch(_) {}
+  // 通知：链接卡片已渲染完成，供布局等分计算使用（异步触发，确保监听器已就位）
+  try { setTimeout(()=>{ try { window.dispatchEvent(new Event('bm_links_rendered')); } catch(_) {} }, 0); } catch(_) {}
+
+  // 同步每列下 link-card 的固定宽度，用于稳定单行省略
+  try {
+    const syncWidths = () => {
+      const cols = document.querySelectorAll('.col');
+      cols.forEach(col => {
+        const w = Math.floor(col.getBoundingClientRect().width);
+        if (!w) return;
+        col.querySelectorAll('.link-card').forEach(card => {
+          // 与列同宽，box-sizing:border-box 已处理内边距
+          card.style.width = (w - 30) + 'px';
+          card.style.maxWidth = (w - 30) + 'px';
+        });
+      });
+    };
+    // 初始同步：延后一帧，确保 fitCardsToViewport 已设置高度
+    setTimeout(syncWidths, 0);
+    // 监听容器尺寸变化
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => syncWidths());
+      document.querySelectorAll('.col').forEach(col => ro.observe(col));
+    }
+    // 监听窗口变化（兜底）
+    window.addEventListener('resize', syncWidths);
+  } catch(_) { }
 
   async function persistAll(newArr) {
     try {

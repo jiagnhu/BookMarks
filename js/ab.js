@@ -30,10 +30,13 @@ export function switchToPage(p, pushState = true) {
     const token = localStorage.getItem('bm_token');
     if (!token) {
       alert('请先登录后再访问 B 页');
-      // 回退到 A 页并终止后续逻辑
+      // 回退到 A 页并终止后续逻辑：同时应用 A 页标题与副标题
       state.page = 'A';
       if (pushState) history.pushState({ page: 'A' }, '', `?page=A`);
+      document.querySelectorAll('dialog')
+        .forEach(d => { try { if (d && d.open) d.close(); } catch (_) {} });
       els.pageTag.textContent = 'A页';
+      initPageTitle();
       if (linkA && linkB) { linkA.classList.add('active'); linkB.classList.remove('active'); }
       els.btnSetBPass.classList.add('hidden');
       loadLinks('A');

@@ -1,5 +1,5 @@
 // 更清晰的缓存与更新策略（离线可用 + 快速静态资源 + API 谨慎缓存）
-const CACHE_VERSION = 'v3_11';
+const CACHE_VERSION = 'v3_12';
 const PREFIX = 'bm-cache-';
 const PRECACHE = `${PREFIX}precache-${CACHE_VERSION}`;
 const RUNTIME = `${PREFIX}runtime-${CACHE_VERSION}`;
